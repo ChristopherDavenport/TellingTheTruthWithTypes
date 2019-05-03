@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="keywords" content="truth,types" />
+    <meta name="description" content="Telling the truth with type presentation" />
+    <title>Telling the truth with types</title>
+    <style>
+      @import url(https://fonts.googleapis.com/css?family=Droid+Serif);
+      @import url(https://fonts.googleapis.com/css?family=Yanone+Kaffeesatz);
+      @import url(https://fonts.googleapis.com/css?family=Ubuntu+Mono:400,700,400italic);
+
+      body {
+        font-family: 'Droid Serif';
+      }
+      h1, h2, h3 {
+        font-family: 'Yanone Kaffeesatz';
+        font-weight: 400;
+        margin-bottom: 0;
+      }
+      .remark-slide-content { font-size: 25px; }
+      .remark-slide-content h1 { font-size: 3em; }
+      .remark-slide-content h2 { font-size: 2em; }
+      .remark-slide-content h3 { font-size: 1.6em; }
+      .footnote {
+        position: absolute;
+        bottom: 3em;
+      }
+      li p { line-height: 1.5em; }
+      .red { color: #fa0000; }
+      .large { font-size: 2em; }
+      a, a > code {
+        color: rgb(249, 38, 114);
+        text-decoration: none;
+      }
+      code {
+        background: #e7e8e2;
+        border-radius: 5px;
+      }
+      .remark-code, .remark-inline-code { font-family: 'Ubuntu Mono'; }
+      .remark-code-line-highlighted     { background-color: #373832; }
+      .pull-left {
+        float: left;
+        width: 47%;
+      }
+      .pull-right {
+        float: right;
+        width: 47%;
+      }
+      .pull-right ~ p {
+        clear: both;
+      }
+      #slideshow .slide .content code {
+        font-size: 0.8em;
+      }
+      #slideshow .slide .content pre code {
+        font-size: 0.9em;
+        padding: 15px;
+      }
+      .inverse {
+        background: #272822;
+        color: #777872;
+        text-shadow: 0 0 20px #333;
+      }
+      .inverse h1, .inverse h2 {
+        color: #f3f3f3;
+        line-height: 0.8em;
+      }
+
+      /* Slide-specific styling */
+      /* #slide-inverse .footnote {
+        bottom: 12px;
+        left: 20px;
+      }
+      #slide-how .slides {
+        font-size: 0.9em;
+        position: absolute;
+        top:  151px;
+        right: 140px;
+      }
+      #slide-how .slides h3 {
+        margin-top: 0.2em;
+      }
+      #slide-how .slides .first, #slide-how .slides .second {
+        padding: 1px 20px;
+        height: 90px;
+        width: 120px;
+        -moz-box-shadow: 0 0 10px #777;
+        -webkit-box-shadow: 0 0 10px #777;
+        box-shadow: 0 0 10px #777;
+      }
+      #slide-how .slides .first {
+        background: #fff;
+        position: absolute;
+        top: 20%;
+        left: 20%;
+        z-index: 1;
+      }
+      #slide-how .slides .second {
+        position: relative;
+        background: #fff;
+        z-index: 0;
+      } */
+
+      /* Two-column layout */
+      .left-column {
+        color: #777;
+        width: 20%;
+        height: 92%;
+        float: left;
+      }
+        .left-column h2:last-of-type, .left-column h3:last-child {
+          color: #000;
+        }
+      .right-column {
+        width: 75%;
+        float: right;
+        padding-top: 1em;
+      }
+    </style>
+  </head>
+  <body>
+    <textarea id="source">
+
+class: center, middle, inverse
+
+# Telling the Truth with Types
+Chris Davenport
+
+Banno Group inside of Jack Henry & Associates
+
+github - ChristopherDavenport • twitter - davenpcm
+
+---
+
+class: middle
+
+.left-column[
+  # About Me
+]
+.right-column[
+
+- Http4s and Cats-Effect Maintainer
+
+- Programming in Fully Functional Scala for 5 years
+
+- Active Open Source Contributor
+
+______
+
+I went through the same journey learning all these tools as well as how to communicate them.
+]
+
+---
+
+class: middle
+
+.left-column[
+  # Talking About Our Code
+]
+
+.right-column[
+
+1. Have conversations with your code
+
+2. Determine when something odd is going on
+
+3. Clearly rephrase so that our honesty can clarify our semantics
+
+]
+
+---
+
+class: middle
+
+.left-column[
+  # What This Is Not
+]
+
+.right-column[
+
+- A discussion over the merits of descriptive method names
+
+- A criticism of using knowledge outside the type system
+
+- Mathematically Accurate
+
+]
+
+
+---
+
+class: middle
+
+# Baseline Setup
+
+SBT
+
+```sbt
+scalacOptions += "-Ypartial-unification"
+addCompilerPlugin("org.spire-math" % "kind-projector" % "0.9.9")
+libraryDependencies ++= Seq(
+  "org.typelevel" %% "cats-core" % "1.6.0",
+  "org.typelevel" %% "cats-effect" % "1.2.0",
+  // Only Used for Data Types
+  "com.chuusai" %% "shapeless" % "2.3.3",
+  // Only Used For Stream in a Single Example
+  "co.fs2" %% "fs2-core" % "1.0.4" 
+)
+```
+
+Imports 
+
+```scala
+import cats._
+import cats.implicits._
+import cats.effect._
+import cats.effect.concurrent._
+```
+
+---
+
+class: middle, inverse
+
+# Typical Examples
+
+---
+
+class: middle
+
+# Backdoor
+
+```scala
+def divide(num: Int, den: Int): Double = 
+  if (den === 0) 
+    throw new IllegalArgumentException("Zero Not a Valid Denominator")
+  else num / den
+```
+
+---
+
+class: middle
+
+# Meaningless Types 
+
+Unknown Effects Interspersed
+
+```scala
+def writeToTheDatabase(criticalData: Data): Unit
+```
+
+Handles Something
+
+```scala
+def doSomethingWhenIGetSomething: PartialFunction[Any, Unit] = {
+  case RandomObjectThatHopefullyIsAtleastInCompanionObject => 
+    ()
+  case AnotherPerhapsDisconnected(i: Int) => 
+    ()
+}
+```
+
+---
+
+class: middle
+# Use Based Functions
+
+```scala
+trait Stage {
+  // Only call this function once.
+  // Afterwards this stage is inoperable.
+  // Calling this function more than once
+  // will result in an error
+  def shutdownStage: Unit
+}
+```
+
+---
+
+class: middle, inverse
+
+# Conversational Code
+
+- There is
+
+- Given and Then
+
+- Forall
+
+- Such That
+
+- And
+
+- Or
+
+
+---
+
+class: middle
+
+# There is
+
+- Proof that values do indeed exist
+
+- May only exist at a specific scope
+
+
+---
+
+class: middle
+
+# There is
+
+```scala
+val a : Int = 0
+
+val b: String = "b"
+
+val c: List[String] = List("", "foo", "5")
+
+val d: List[Int] = c.flatMap{ s => 
+  val i = s.length
+  i
+}
+```
+
+---
+
+class: middle
+
+# There exists
+
+```scala
+case class Product(getProduct: Int) extends AnyVal
+object Product {
+  implicit val productMonoid : Monoid[Product] = new Monoid[Product]{
+    def empty: Product = Product(1)
+    def combine(a: Product, b: Product): Product = 
+      Product(a.getProduct * b.getProduct)
+  }
+}
+```
+
+---
+
+class: middle
+
+# Given and Then/Therefore
+
+- Admit what you do not know
+  
+  - I do not yet know such a value exists
+
+- **Given** such a value exists **then**
+
+```scala
+def l(s: String): Int
+
+def l2(l: List[String]): Int
+
+class CustomInt(i: Int){
+  def show: String
+}
+```
+
+---
+
+class: middle
+
+# Forall
+
+- At a given scope **forall** types of this shape, then...
+
+```scala
+def l2[A](l: List[A]): Int
+
+def f[A](a: A): A
+```
+
+---
+
+class: middle
+
+# Forall - Prove it!
+
+```scala
+def l2[A](l: List[A]): Int =
+  l.length
+
+def f[A](a: A): A = a
+```
+
+---
+
+class: middle
+
+# Such That
+
+- Typeclasses and Implicit Evidence
+
+- Within a given location **forall** types **such that** - **there exists** proof of something about the abstract type
+
+```scala
+def combine[A: Semigroup](a1: A, a2: A): A
+
+
+def fold[G[_]: Foldable, A : Monoid](ga: G[A]): A
+
+
+def fold2[G[_], A](ga: G[A])(implicit ev1: Foldable[G], ev2: Monoid[A]): A
+```
+---
+
+class: middle
+
+# Such that - Prove it!
+
+```scala
+def combine[A: Semigroup](a1: A, a2: A): A = 
+  a1 |+| a2
+
+
+def fold[G[_]: Foldable, A : Monoid](ga: G[A]): A = 
+  ga.foldMap(identity)
+
+
+def fold2[G[_], A](ga: G[A])(implicit ev1: Foldable[G], ev2: Monoid[A]): A =
+  fold[G, A](ga)
+```
+
+---
+
+class: middle
+
+# And
+
+- Allows Compound Statements
+- traits/classes
+- **Given** A **then** B **and** C
+- case classes, products, hlists
+- Functions
+- **Given** A **and** B **then** C
+
+
+```scala
+trait FunctionBall {
+  def back: Back
+  def seat: Seat
+  def leg: Legs
+}
+
+def chair(back: Back, seat: Seat, legs: Legs): Chair
+
+case class Chair(back: Back, seat: Seat, legs: Legs)
+```
+
+---
+
+class: middle
+
+# Or
+
+- Either, Coproduct
+
+- **Given** A **or** B **then** C
+
+```scala
+def collapse(e: Either[Int, String]): Int
+
+type EitherK[G[_], H[_], A] = Either[G[A], H[A]]
+
+def differingEv(i: Int, e: EitherK[Sync, Concurrent, F]): F[Ref[F, Int]]
+```
+
+
+---
+
+class: middle
+
+# Deferred Composition
+
+- At a given scope we lack the information to reason about how something happens as it is based on the type of F that is not yet proven.
+
+```scala
+trait IntAlg[F[_]]{
+  def store(i: Int): F[Unit]
+  def change(f: Int => Int): F[Unit]
+  def read: F[Int]
+}
+
+def impl[F[_]: Sync](init: Int): F[IntAlg[F]] = 
+  Ref.of(init).map{ ref =>
+    new IntAlg[F]{
+      def store(i: Int): F[Unit] = ref.set(i)
+      def change(f: Int => Int): F[Unit] = ref.update(f)
+      def read: F[Int] = ref.get
+    }
+  }
+```
+
+---
+
+class: middle, inverse
+
+# Building On Our Concepts
+
+- Initial Proofs
+
+- Http Server
+
+---
+
+class: middle
+
+# Initial Proofs
+
+- **There exists** implicit evidence that IO satisfies the constraint sync 
+
+
+```scala
+object Methods {
+  def writeHello[F[_]: Sync]: F[Unit] = 
+    Sync[F].delay(println("Hello Everyone!"))
+}
+
+class Main extends IOApp {
+  def run(args: List[String]): IO[ExitCode] = 
+    Methods.writeHello[IO].map(_ => ExitCode.Success)
+}
+
+```
+
+---
+
+class: middle
+
+# Http Server In a Nutshell
+
+```scala
+trait Socket[F[_]]{
+  def read: F[Vector[Byte]]
+  def write(f: Vector[Byte]): F[Unit]
+}
+
+// HTTP Simplified
+
+case class Request(
+  method: String,
+  httpVersion: String,
+  query: String,
+  headers: List[(String, String)],
+  body: Vector[Byte]
+)
+
+case class Response(
+  status: Int,
+  httpVersion: String,
+  headers: List[(String, String)],
+  body: Vector[Byte]
+)
+```
+
+---
+
+class: middle
+
+# Http Server Proof
+
+```scala
+import fs2.Stream
+
+def serveSockets[F[_]: Monad](
+  sockets: Stream[F, Resource[F, Socket[F]],
+  parser: Socket[F] => F[Request],
+  httpApp: Request => F[Response],
+  renderer: Socket[F] => Response => F[Unit],
+  maxParrallelism: Int
+): Stream[F, Nothing] = 
+  sockets.map{resource => 
+    Stream.resource(resource)
+      .flatMap{ socket => 
+        Stream.eval_{
+          for {
+            req   <- parser(socket)
+            resp  <- httpApp(req)
+            _     <- renderer(socket)(resp)
+          } yield ()
+        }
+      }
+  }.parJoin(maxParrallelism)
+```
+
+---
+class: middle, inverse
+
+# Revisiting Normal
+
+---
+
+class: middle
+
+# Division Revisited
+
+```scala
+def divide(num: Int, den: Int): Double = 
+  if (den === 0) 
+    throw new IllegalArgumentException("Zero Not a Valid Denominator")
+  else num / den
+
+def div[F[_]: ApplicativeError[?[_], Throwable]](
+  num: Int,
+  den: Int
+): F[Double] = 
+  if (den === 0) 
+    ApplicativeError[F, Throwable].raiseError(
+      new IllegalArgumentException("Zero Not a Valid Denominator")
+    )
+  else Applicative[F].pure(num / den)
+
+def divOpt(num: Int, den: Int): Option[Double] =
+  div[Either[Throwable, ?]](num, int).toOption
+```
+
+---
+
+class: middle
+
+# Fully Safe Division
+
+```scala
+sealed abstract case class NonZeroInt(i: Int)
+object NonZeroInt {
+  def fromInt(i: Int): Option[NonZeroInt] = 
+    if (i === 0) Option.empty[NonZeroInt]
+    else NonZeroInt(i)
+}
+
+def safeDiv(num: Int, den: NonZeroInt): Double
+```
+
+---
+
+class: middle
+
+# Useless Types Revisited
+
+```scala
+// Deferred Evaluation of F but any must have the ability to suspend side-effects
+def writeToDatabase[F[_]: Sync](i: Int): F[Unit]
+
+// Using Sealed Traits
+def doSomethingWhenIGetSomething(s: Something): SyncIO[Unit] = 
+  s match {
+    case RandomObjectThatHopefullyIsAtleastInCompanionObject => 
+      Applicative[SyncIO].unit
+  }
+
+// Using Shapeless Coproduct
+import shapeless.:+:
+
+def arbitraryCoproductVersion[F[_]: Sync](
+  x: Object1.type :+: Object2.type
+): F[Unit]
+```
+
+---
+
+class: middle
+
+# Use Based Function Revisited 
+
+```scala
+def createStage[F[_]: Bracket[?[_], Throwable]]: Resource[F, Stage]
+
+createStage.use( stage =>
+  // Everything I need to do with stage
+  // Stage trait does not need to know the information
+  // that will be called when it leaves this scope.
+)
+```
+
+---
+
+class: middle
+
+# Recap
+
+- We can approach our code conversationally
+
+- If we respect what we have said and choose to communicate honestly with the type system we can trust that our programs will do what we expect.
+
+---
+
+class: middle, inverse
+
+# Thanks All!
+
+
+
+
+</textarea>
+   <script src="remark-latest.min.js">
+   </script>
+   <script>
+     var slideshow = remark.create();
+   </script>
+ </body>
+</html>
+<!-- Local -->
+<!-- Remote -->
+    <!-- </textarea>
+    <script src="https://remarkjs.com/downloads/remark-latest.min.js">
+    </script>
+    <script>
+      var slideshow = remark.create();
+    </script>
+  </body>
+</html> -->
